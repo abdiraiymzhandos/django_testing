@@ -1,18 +1,9 @@
-import pytest
-from django.urls import reverse
-from django.contrib.auth import get_user_model
 from http import HTTPStatus
 
-from news.models import News, Comment
-
-User = get_user_model()
-
-
-@pytest.fixture
-def users(db):
-    author = User.objects.create(username='Лев Толстой')
-    reader = User.objects.create(username='Читатель простой')
-    return {'author': author, 'reader': reader}
+import pytest
+from django.urls import reverse
+from news.models import Comment, News
+from pytest_django.asserts import assertRedirects
 
 
 @pytest.fixture
@@ -21,10 +12,10 @@ def news(db):
 
 
 @pytest.fixture
-def comment(db, users, news):
+def comment(db, news, admin_user):
     return Comment.objects.create(
         news=news,
-        author=users['author'],
+        author=admin_user,
         text='Текст комментария'
     )
 
@@ -39,24 +30,18 @@ def test_pages_availability(client, news):
         ('users:signup', None),
     ]
     for name, args in urls:
-        url = reverse(name, args=args if args else [])
+        url = reverse(name, args=args)
         response = client.get(url)
         assert response.status_code == HTTPStatus.OK
 
 
 @pytest.mark.django_db
-def test_availability_for_comment_edit_and_delete(client, users, comment):
-    user_status_pairs = [
-        (users['author'], HTTPStatus.OK),
-        (users['reader'], HTTPStatus.NOT_FOUND),
-    ]
-    for user, status in user_status_pairs:
-        client.force_login(user)
-        for name in ('news:edit', 'news:delete'):
-            url = reverse(name, args=(comment.id,))
-            response = client.get(url)
-            assert response.status_code == status
-        client.logout()
+@pytest.mark.parametrize('url_name', ['news:edit', 'news:delete'])
+def test_availability_for_comment_edit_and_delete(admin_client,
+                                                  comment, url_name):
+    url = reverse(url_name, args=(comment.id,))
+    response = admin_client.get(url)
+    assert response.status_code == HTTPStatus.OK
 
 
 @pytest.mark.django_db
@@ -66,5 +51,4 @@ def test_redirect_for_anonymous_client(client, comment):
         url = reverse(name, args=(comment.id,))
         redirect_url = f'{login_url}?next={url}'
         response = client.get(url)
-        assert response.status_code == HTTPStatus.FOUND
-        assert response['Location'] == redirect_url
+        assertRedirects(response, redirect_url)

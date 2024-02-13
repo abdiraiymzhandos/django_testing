@@ -1,10 +1,11 @@
-from django.urls import path
+from django.urls import include, path
 
 from notes import views
 
 app_name = 'notes'
 
 urlpatterns = [
+    path('auth/', include('django.contrib.auth.urls')),
     path('', views.Home.as_view(), name='home'),
     path('add/', views.NoteCreate.as_view(), name='add'),
     path('edit/<slug:slug>/', views.NoteUpdate.as_view(), name='edit'),
