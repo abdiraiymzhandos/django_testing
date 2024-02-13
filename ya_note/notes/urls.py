@@ -1,5 +1,4 @@
 from django.urls import include, path
-
 from notes import views
 
 app_name = 'notes'
