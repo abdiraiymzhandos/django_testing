@@ -11,6 +11,7 @@ User = get_user_model()
 
 @pytest.mark.django_db
 def test_news_count_on_home_page(client, news_items):
+    """Тест проверки количества новостей на домашней странице."""
     response = client.get(reverse('news:home'))
     object_list = response.context.get('object_list')
     assert len(object_list) == settings.NEWS_COUNT_ON_HOME_PAGE
@@ -18,6 +19,7 @@ def test_news_count_on_home_page(client, news_items):
 
 @pytest.mark.django_db
 def test_news_order_on_home_page(client, news_items):
+    """Тест проверки порядка отображения новостей на домашней странице."""
     response = client.get(reverse('news:home'))
     object_list = response.context.get('object_list')
     all_dates = [news.date for news in object_list]
@@ -27,6 +29,9 @@ def test_news_order_on_home_page(client, news_items):
 
 @pytest.mark.django_db
 def test_comments_order_on_detail_page(client, test_news, test_comments):
+    """Тест проверки порядка отображения комментариев
+    на странице деталей новости.
+    """
     response = client.get(reverse('news:detail', args=[test_news.id]))
     news = response.context.get('news')
     all_comments = news.comment_set.all().order_by('created')
@@ -38,13 +43,17 @@ def test_comments_order_on_detail_page(client, test_news, test_comments):
 
 @pytest.mark.django_db
 def test_form_availability_for_anonymous_client(client, test_news):
+    """Тест проверки доступности формы комментариев для анонимного клиента."""
     response = client.get(reverse('news:detail', args=[test_news.id]))
     assert 'form' not in response.context
 
 
 @pytest.mark.django_db
-def test_form_availability_for_authorized_client(client, test_news, test_user):
-    client.force_login(test_user)
+def test_form_availability_for_authorized_client(user_and_client, test_news):
+    """Тест проверки доступности формы комментариев
+    для авторизованного клиента.
+    """
+    user, client = user_and_client
     response = client.get(reverse('news:detail', args=[test_news.id]))
     assert 'form' in response.context
     assert isinstance(response.context['form'], CommentForm)

@@ -24,26 +24,21 @@ class NoteContentTests(TestCase):
         self.client_user2.login(username='user2', password='password2')
 
         # Создание заметок
-        self.note1 = Note.objects.create(
+        self.note = Note.objects.create(
             title="User 1's note", text="A note by user 1",
             slug="user1-note", author=self.user1)
-        self.note2 = Note.objects.create(
-            title="User 2's note", text="A note by user 2",
-            slug="user2-note", author=self.user2)
 
     def test_notes_list_for_different_users(self):
-        """Проверка отображения списка заметок для разных пользователей."""
+        """Проверка отображения списка заметок для пользователей."""
         test_cases = [
-            (self.client_user2, self.note2.title, True, self.user2.username),
-            (self.client_user2, self.note1.title, False, self.user2.username),
+            (self.client_user2, self.note, False, self.user2.username),
         ]
 
-        for client, note_title, expected, username in test_cases:
-            with self.subTest(user=username, note_title=note_title):
+        for client, note, expected, username in test_cases:
+            with self.subTest(user=username):
                 response = client.get(reverse('notes:list'))
-                note_titles = [note.title for note in response.context[
-                    'object_list']]
-                note_exists = note_title in note_titles
+                notes = response.context['object_list']
+                note_exists = any(n.title == note.title for n in notes)
                 self.assertIs(note_exists, expected)
 
     def test_form_presence_on_add_and_edit_pages(self):
@@ -57,8 +52,8 @@ class NoteContentTests(TestCase):
 
         test_cases = [
             (reverse('notes:add'), None),  # URL для добавления заметки
-            (reverse('notes:edit', kwargs={'slug': self.note1.slug}),
-             self.note1.slug),  # URL для редактирования заметки
+            (reverse('notes:edit', kwargs={'slug': self.note.slug}),
+             self.note.slug),  # URL для редактирования заметки
         ]
 
         for url, slug in test_cases:

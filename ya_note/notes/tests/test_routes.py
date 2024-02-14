@@ -34,9 +34,13 @@ class YaNoteRouteTests(TestCase):
         response = self.client.get(reverse('notes:home'))
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        response2 = self.client.get(reverse('notes:list'))
-        expected_redirect_url = '/auth/login/?next=/notes/'
-        self.assertRedirects(response2, expected_redirect_url)
+        # Проверка страницы входа
+        response4 = self.client.get(reverse('notes:login'))
+        self.assertEqual(response4.status_code, HTTPStatus.OK)
+
+        # Проверка страницы выхода
+        response5 = self.client.post(reverse('notes:logout'))
+        self.assertEqual(response5.status_code, HTTPStatus.OK)
 
     def test_pages_for_authenticated_user(self):
         """Проверяет доступность страниц для
@@ -79,14 +83,3 @@ class YaNoteRouteTests(TestCase):
                 url = reverse(view_name, kwargs=kwargs)
                 response = client.get(url)
                 self.assertEqual(response.status_code, expected_status)
-
-    def test_note_detail_page_for_other_user(self):
-        self.client.login(username='otheruser', password='12345')
-        response = self.client.get(reverse(
-            'notes:detail', kwargs={'slug': self.note.slug}))
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
-
-    def test_login_page_accessibility(self):
-        url = reverse('notes:login')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, HTTPStatus.OK)

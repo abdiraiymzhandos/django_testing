@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import pytest
-
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client
@@ -10,6 +9,20 @@ from django.utils import timezone
 from news.models import Comment, News
 
 User = get_user_model()
+
+
+@pytest.fixture
+def news(db):
+    return News.objects.create(title='Заголовок', text='Текст')
+
+
+@pytest.fixture
+def comment1(db, news, admin_user):
+    return Comment.objects.create(
+        news=news,
+        author=admin_user,
+        text='Текст комментария'
+    )
 
 
 @pytest.fixture
@@ -49,6 +62,15 @@ def test_comments(db, test_news, test_user):
     return comments
 
 
+# with this fixture test "test_user_cannot_edit_others_comment" never wroks.
+# That's why i did not change fixture "other_user_and_client"
+
+# @pytest.fixture
+# def other_user_and_client(db, test_user):
+#     other_client = Client()
+#     other_client.force_login(test_user)
+#     return other_client
+
 @pytest.fixture
 def other_user_and_client(db, django_user_model):
     other_user = django_user_model.objects.create_user(
@@ -56,3 +78,26 @@ def other_user_and_client(db, django_user_model):
     other_client = Client()
     other_client.force_login(other_user)
     return other_user, other_client
+
+
+@pytest.fixture
+def user_and_client(db):
+    # Use the correct Django model for creating a user
+    user = User.objects.create_user(
+        username='Мимо Крокодил', password='password')
+    # Instantiate the Client directly from django.test
+    client = Client()
+    client.force_login(user)
+    return user, client
+
+
+@pytest.fixture
+def news_item(db):
+    return News.objects.create(title='Заголовок', text='Текст')
+
+
+@pytest.fixture
+def comment(db, user_and_client, news_item):
+    user, _ = user_and_client
+    return Comment.objects.create(
+        news=news_item, author=user, text='Текст комментария')
