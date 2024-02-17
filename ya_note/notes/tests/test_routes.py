@@ -31,16 +31,21 @@ class YaNoteRouteTests(TestCase):
 
     def test_anonymous_user_access(self):
         """Проверяет доступность и редиректы для анонимных пользователей."""
-        response = self.client.get(reverse('notes:home'))
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-
-        # Проверка страницы входа
-        response4 = self.client.get(reverse('notes:login'))
-        self.assertEqual(response4.status_code, HTTPStatus.OK)
-
-        # Проверка страницы выхода
-        response5 = self.client.post(reverse('notes:logout'))
-        self.assertEqual(response5.status_code, HTTPStatus.OK)
+        # Список URL для проверки
+        urls_to_test = [
+            ('notes:home', 'get'),
+            ('notes:login', 'get'),
+            ('notes:logout', 'post'),
+            ('users:signup', 'get'),
+        ]
+        for url_name, method in urls_to_test:
+            if method == 'get':
+                response = self.client.get(reverse(url_name))
+            elif method == 'post':
+                response = self.client.post(reverse(url_name))
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+            self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_pages_for_authenticated_user(self):
         """Проверяет доступность страниц для
@@ -57,29 +62,26 @@ class YaNoteRouteTests(TestCase):
                     response = client.get(url)
                     self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    def test_note_pages_accessibility_by_role(self):
+    def test_redirect_anonymous_user_to_login(self):
         """
-        Проверяет доступность страниц отдельной заметки, удаления и
-        редактирования заметки
-        в зависимости от роли пользователя (автора или читателя).
+        Проверяет, что анонимный пользователь перенаправляется на страницу
+        входа при попытке доступа к защищенным страницам.
         """
-        tests = [
-            (self.author_client, HTTPStatus.OK, 'notes:detail',
-             {'slug': self.note.slug}),
-            (self.reader_client, HTTPStatus.NOT_FOUND, 'notes:detail',
-             {'slug': self.note.slug}),
-            (self.author_client, HTTPStatus.OK, 'notes:edit',
-             {'slug': self.note.slug}),
-            (self.reader_client, HTTPStatus.NOT_FOUND, 'notes:edit',
-             {'slug': self.note.slug}),
-            (self.author_client, HTTPStatus.OK, 'notes:delete',
-             {'slug': self.note.slug}),
-            (self.reader_client, HTTPStatus.NOT_FOUND, 'notes:delete',
-             {'slug': self.note.slug}),
+        pages = [
+            ('notes:list', {}),
+            ('notes:success', {}),
+            ('notes:add', {}),
+            ('notes:detail', {'slug': 'example-slug'}),
+            ('notes:edit', {'slug': 'example-slug'}),
+            ('notes:delete', {'slug': 'example-slug'}),
         ]
 
-        for client, expected_status, view_name, kwargs in tests:
-            with self.subTest(client=client, view_name=view_name):
+        login_url = reverse('notes:login')
+        for view_name, kwargs in pages:
+            with self.subTest(view_name=view_name):
                 url = reverse(view_name, kwargs=kwargs)
-                response = client.get(url)
-                self.assertEqual(response.status_code, expected_status)
+                expected_redirect_url = f"{login_url}?next={url}"
+                response = self.client.get(url)
+                self.assertRedirects(response, expected_redirect_url,
+                                     status_code=HTTPStatus.FOUND,
+                                     target_status_code=HTTPStatus.OK)

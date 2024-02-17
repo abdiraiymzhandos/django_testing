@@ -49,11 +49,10 @@ def test_form_availability_for_anonymous_client(client, test_news):
 
 
 @pytest.mark.django_db
-def test_form_availability_for_authorized_client(user_and_client, test_news):
+def test_form_availability_for_authorized_client(admin_client, test_news):
     """Тест проверки доступности формы комментариев
     для авторизованного клиента.
     """
-    user, client = user_and_client
-    response = client.get(reverse('news:detail', args=[test_news.id]))
+    response = admin_client.get(reverse('news:detail', args=[test_news.id]))
     assert 'form' in response.context
     assert isinstance(response.context['form'], CommentForm)
