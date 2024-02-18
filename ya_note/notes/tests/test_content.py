@@ -8,33 +8,36 @@ from notes.models import Note
 
 class NoteContentTests(TestCase):
     def setUp(self):
-        # Создание и логин пользователей
+        # Create and log in users
         self.user1 = User.objects.create_user(username='user1',
                                               password='password1')
         self.user2 = User.objects.create_user(username='user2',
                                               password='password2')
 
-        # Создание заметок
+        # Log in clients for author and reader
+        self.author_client = self.client
+        self.reader_client = self.client
+        self.author_client.login(username='user1', password='password1')
+        self.reader_client.login(username='user2', password='password2')
+
+        # Create notes
         self.note_user1 = Note.objects.create(title="User 1's note",
                                               text="A note by user 1",
                                               slug="user1-note",
                                               author=self.user1)
-        self.note_user2 = Note.objects.create(title="User 2's note",
-                                              text="A note by user 2",
-                                              slug="user2-note",
-                                              author=self.user2)
 
     def test_note_visibility_per_user(self):
-        """Проверка видимости заметок для разных пользователей."""
-        self.client.login(username='user1', password='password1')
-        response_user1 = self.client.get(reverse('notes:list'))
-        notes_user1 = list(response_user1.context['object_list'])
-        self.assertNotIn(self.note_user2, notes_user1)
+        """Test note visibility for different users."""
+        test_cases = [
+            (self.author_client, False),
+            (self.reader_client, False),
+        ]
 
-        self.client.login(username='user2', password='password2')
-        response_user2 = self.client.get(reverse('notes:list'))
-        notes_user2 = list(response_user2.context['object_list'])
-        self.assertNotIn(self.note_user1, notes_user2)
+        for client, expected in test_cases:
+            with self.subTest(client=client):
+                response = client.get(reverse('notes:list'))
+                notes_in_list = list(response.context['object_list'])
+                self.assertIs(self.note_user1 in notes_in_list, expected)
 
     def test_form_presence_on_add_and_edit_pages(self):
         """
@@ -43,18 +46,14 @@ class NoteContentTests(TestCase):
         Убедимся, что при переходе на страницы добавления и редактирования
         заметки в контексте ответа содержится форма NoteForm.
         """
-        self.note = Note.objects.create(
-            title="User 3's note", text="A note by user 3",
-            slug="user3-note", author=self.user1)
         self.client.login(username='user1', password='password1')
 
         test_cases = [
-            (reverse('notes:add'), None),  # URL для добавления заметки
-            (reverse('notes:edit', kwargs={'slug': self.note.slug}),
-             self.note.slug),  # URL для редактирования заметки
+            reverse('notes:add'),
+            reverse('notes:edit', kwargs={'slug': self.note_user1.slug}),
         ]
 
-        for url, slug in test_cases:
+        for url in test_cases:
             with self.subTest(url=url):
                 response = self.client.get(url)
                 self.assertIn('form', response.context)

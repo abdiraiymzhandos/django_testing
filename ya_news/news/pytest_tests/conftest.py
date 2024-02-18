@@ -45,6 +45,13 @@ def test_user(db):
 
 
 @pytest.fixture
+def other_user_and_client(db, test_user):
+    other_client = Client()
+    other_client.force_login(test_user)
+    return other_client
+
+
+@pytest.fixture
 def test_news(db):
     return News.objects.create(title='Test News', text='Just some text.')
 
@@ -60,26 +67,3 @@ def test_comments(db, test_news, test_user):
         comment.save()
         comments.append(comment)
     return comments
-
-
-@pytest.fixture
-def other_user_and_client(db, test_user):
-    other_client = Client()
-    other_client.force_login(test_user)
-    return other_client
-
-
-@pytest.fixture
-def user_and_client(db):
-    user = User.objects.create_user(
-        username='Мимо Крокодил', password='password')
-    client = Client()
-    client.force_login(user)
-    return user, client
-
-
-@pytest.fixture
-def comment(db, user_and_client, test_news):
-    user, _ = user_and_client
-    return Comment.objects.create(
-        news=test_news, author=user, text='Текст комментария')

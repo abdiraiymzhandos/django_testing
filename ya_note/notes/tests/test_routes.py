@@ -35,17 +35,13 @@ class YaNoteRouteTests(TestCase):
         urls_to_test = [
             ('notes:home', 'get'),
             ('notes:login', 'get'),
-            ('notes:logout', 'post'),
+            ('notes:logout', 'get'),
             ('users:signup', 'get'),
         ]
         for url_name, method in urls_to_test:
             if method == 'get':
                 response = self.client.get(reverse(url_name))
-            elif method == 'post':
-                response = self.client.post(reverse(url_name))
-            else:
-                raise ValueError(f"Unsupported HTTP method: {method}")
-            self.assertEqual(response.status_code, HTTPStatus.OK)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_pages_for_authenticated_user(self):
         """Проверяет доступность страниц для
@@ -71,9 +67,9 @@ class YaNoteRouteTests(TestCase):
             ('notes:list', {}),
             ('notes:success', {}),
             ('notes:add', {}),
-            ('notes:detail', {'slug': 'example-slug'}),
-            ('notes:edit', {'slug': 'example-slug'}),
-            ('notes:delete', {'slug': 'example-slug'}),
+            ('notes:detail', {'slug': self.note.slug}),
+            ('notes:edit', {'slug': self.note.slug}),
+            ('notes:delete', {'slug': self.note.slug}),
         ]
 
         login_url = reverse('notes:login')
@@ -82,6 +78,4 @@ class YaNoteRouteTests(TestCase):
                 url = reverse(view_name, kwargs=kwargs)
                 expected_redirect_url = f"{login_url}?next={url}"
                 response = self.client.get(url)
-                self.assertRedirects(response, expected_redirect_url,
-                                     status_code=HTTPStatus.FOUND,
-                                     target_status_code=HTTPStatus.OK)
+                self.assertRedirects(response, expected_redirect_url)

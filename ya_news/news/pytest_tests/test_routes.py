@@ -7,6 +7,7 @@ from pytest_django.asserts import assertRedirects
 
 @pytest.mark.django_db
 def test_pages_availability(client, news):
+    """Тестирует доступность страниц для пользователя."""
     urls = [
         ('news:home', None),
         ('news:detail', (news.id,)),
@@ -26,14 +27,15 @@ def test_comment_author_can_access_edit_and_delete_pages(admin_client,
     """Тест, что автор комментария может получить доступ
     к страницам редактирования и удаления.
     """
-    edit_url = reverse('news:edit', args=[comment1.pk])
-    delete_url = reverse('news:delete', args=[comment1.pk])
+    urls = [
+        ('news:edit', [comment1.pk]),
+        ('news:delete', [comment1.pk]),
+    ]
 
-    response = admin_client.get(edit_url)
-    assert response.status_code == 200
-
-    response = admin_client.get(delete_url)
-    assert response.status_code == 200
+    for url_name, args in urls:
+        url = reverse(url_name, args=args)
+        response = admin_client.get(url)
+        assert response.status_code == HTTPStatus.OK
 
 
 @pytest.mark.django_db
@@ -42,18 +44,20 @@ def test_non_author_cannot_access_edit_and_delete_pages(other_user_and_client,
     """Тест, что не автор комментария не может получить доступ
     к страницам редактирования и удаления.
     """
-    edit_url = reverse('news:edit', args=[comment1.pk])
-    delete_url = reverse('news:delete', args=[comment1.pk])
+    urls = [
+        ('news:edit', [comment1.pk]),
+        ('news:delete', [comment1.pk]),
+    ]
 
-    response = other_user_and_client.get(edit_url)
-    assert response.status_code == 404
-
-    response = other_user_and_client.get(delete_url)
-    assert response.status_code == 404
+    for url_name, args in urls:
+        url = reverse(url_name, args=args)
+        response = other_user_and_client.get(url)
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
 
 @pytest.mark.django_db
 def test_redirect_for_anonymous_client(client, comment1):
+    """Тестирует перенаправление для анонимных пользователей."""
     login_url = reverse('users:login')
     for name in ('news:edit', 'news:delete'):
         url = reverse(name, args=(comment1.id,))
