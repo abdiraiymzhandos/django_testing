@@ -52,16 +52,11 @@ def other_user_and_client(db, test_user):
 
 
 @pytest.fixture
-def test_news(db):
-    return News.objects.create(title='Test News', text='Just some text.')
-
-
-@pytest.fixture
-def test_comments(db, test_news, test_user):
+def test_comments(db, news, test_user):
     now = timezone.now()
     comments = []
     for index in range(10):
-        comment = Comment(news=test_news, author=test_user,
+        comment = Comment(news=news, author=test_user,
                           text=f'Comment {index}',
                           created=now + timedelta(days=index))
         comment.save()

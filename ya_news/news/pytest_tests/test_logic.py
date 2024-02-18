@@ -13,40 +13,40 @@ User = get_user_model()
 
 
 @pytest.mark.django_db
-def test_anonymous_user_cant_create_comment(client, test_news):
+def test_anonymous_user_cant_create_comment(client, news):
     """Тестирует, что анонимный пользователь не может создать комментарий."""
-    url = reverse('news:detail', args=(test_news.id,))
+    url = reverse('news:detail', args=(news.id,))
     form_data = {'text': 'Текст комментария'}
     client.post(url, data=form_data)
     assert Comment.objects.count() == 0
 
 
 @pytest.mark.django_db
-def test_user_can_create_comment(other_user_and_client, test_user, test_news):
+def test_user_can_create_comment(other_user_and_client, test_user, news):
     """Проверяет, что аутентифицированный пользователь может
     создать комментарий.
     """
     auth_client = other_user_and_client
-    url = reverse('news:detail', args=(test_news.id,))
+    url = reverse('news:detail', args=(news.id,))
     form_data = {'text': 'Текст комментария'}
     response = auth_client.post(url, data=form_data)
-    expected_url = reverse('news:detail', args=(test_news.id,)) + '#comments'
+    expected_url = reverse('news:detail', args=(news.id,)) + '#comments'
     assertRedirects(response, expected_url)
     assert Comment.objects.count() == 1
     comment = Comment.objects.first()
     assert comment.text == form_data['text']
-    assert comment.news == test_news
+    assert comment.news == news
     assert comment.author == test_user
 
 
 @pytest.mark.django_db
-def test_user_cant_use_bad_words(other_user_and_client, test_news):
+def test_user_cant_use_bad_words(other_user_and_client, news):
     """
     Проверяет, что пользователь не может использовать
     запрещенные слова в комментариях.
     """
     auth_client = other_user_and_client
-    url = reverse('news:detail', args=(test_news.id,))
+    url = reverse('news:detail', args=(news.id,))
     form_data = {'text': f'Какой-то текст, {BAD_WORDS[0]}, еще текст'}
     response = auth_client.post(url, data=form_data)
     assertFormError(response, 'form', 'text', WARNING)

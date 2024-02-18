@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from notes.forms import NoteForm
@@ -15,8 +15,8 @@ class NoteContentTests(TestCase):
                                               password='password2')
 
         # Log in clients for author and reader
-        self.author_client = self.client
-        self.reader_client = self.client
+        self.author_client = Client()
+        self.reader_client = Client()
         self.author_client.login(username='user1', password='password1')
         self.reader_client.login(username='user2', password='password2')
 
@@ -29,7 +29,7 @@ class NoteContentTests(TestCase):
     def test_note_visibility_per_user(self):
         """Test note visibility for different users."""
         test_cases = [
-            (self.author_client, False),
+            (self.author_client, True),
             (self.reader_client, False),
         ]
 
@@ -55,6 +55,6 @@ class NoteContentTests(TestCase):
 
         for url in test_cases:
             with self.subTest(url=url):
-                response = self.client.get(url)
+                response = self.author_client.get(url)
                 self.assertIn('form', response.context)
                 self.assertIsInstance(response.context['form'], NoteForm)

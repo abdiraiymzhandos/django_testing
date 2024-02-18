@@ -31,17 +31,15 @@ class YaNoteRouteTests(TestCase):
 
     def test_anonymous_user_access(self):
         """Проверяет доступность и редиректы для анонимных пользователей."""
-        # Список URL для проверки
         urls_to_test = [
-            ('notes:home', 'get'),
-            ('notes:login', 'get'),
-            ('notes:logout', 'get'),
-            ('users:signup', 'get'),
+            'notes:home',
+            'notes:login',
+            'notes:logout',
+            'users:signup',
         ]
-        for url_name, method in urls_to_test:
-            if method == 'get':
-                response = self.client.get(reverse(url_name))
-                self.assertEqual(response.status_code, HTTPStatus.OK)
+        for url_name in urls_to_test:
+            response = self.client.get(reverse(url_name))
+            self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_pages_for_authenticated_user(self):
         """Проверяет доступность страниц для

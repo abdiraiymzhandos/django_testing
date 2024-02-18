@@ -28,11 +28,11 @@ def test_news_order_on_home_page(client, news_items):
 
 
 @pytest.mark.django_db
-def test_comments_order_on_detail_page(client, test_news, test_comments):
+def test_comments_order_on_detail_page(client, news, test_comments):
     """Тест проверки порядка отображения комментариев
     на странице деталей новости.
     """
-    response = client.get(reverse('news:detail', args=[test_news.id]))
+    response = client.get(reverse('news:detail', args=[news.id]))
     news = response.context.get('news')
     all_comments = news.comment_set.all().order_by('created')
     all_comments_ids = [comment.id for comment in all_comments]
@@ -42,17 +42,17 @@ def test_comments_order_on_detail_page(client, test_news, test_comments):
 
 
 @pytest.mark.django_db
-def test_form_availability_for_anonymous_client(client, test_news):
+def test_form_availability_for_anonymous_client(client, news):
     """Тест проверки доступности формы комментариев для анонимного клиента."""
-    response = client.get(reverse('news:detail', args=[test_news.id]))
+    response = client.get(reverse('news:detail', args=[news.id]))
     assert 'form' not in response.context
 
 
 @pytest.mark.django_db
-def test_form_availability_for_authorized_client(admin_client, test_news):
+def test_form_availability_for_authorized_client(admin_client, news):
     """Тест проверки доступности формы комментариев
     для авторизованного клиента.
     """
-    response = admin_client.get(reverse('news:detail', args=[test_news.id]))
+    response = admin_client.get(reverse('news:detail', args=[news.id]))
     assert 'form' in response.context
     assert isinstance(response.context['form'], CommentForm)
